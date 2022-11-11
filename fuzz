@@ -1,0 +1,152 @@
+#!/usr/bin/python3
+
+# Fuzz - Web Fuzzer (PoC) by 0bfxgh0st*
+
+import requests, sys
+
+ColMag="\033[0;32m"
+ColEnd="\033[0m"
+ColM="\033[5;32m"
+
+sc=''
+hc=''
+
+def Help():
+
+	print ('Usage python3 fuzz -u <url> -w <wordlist>\n')
+	print ('Options:\n')
+	print ('      -u       url')
+	print ('      -w       wordlist')
+	print ('      --sc     show code status')
+	print ('      --hc     hide code status\n')
+	print ('Example: \n')
+	print ('      python3 fuzz -u http://ghost.server/index.php?FUZZ=/etc/passwd -w /usr/share/wordlists/dirb/common.txt --sc=200,403,500')
+
+if len(sys.argv) < 5:
+
+	Help()
+	sys.exit(1)
+
+headers = {
+
+    'User-Agent': '--'
+}
+
+def ParseArgs():
+
+	parser = []
+	for arg in sys.argv:
+		parser.append(arg)
+	
+		if '-u' in arg:
+
+			urlp = int(parser.index(arg)+1)
+
+		if '-w' in arg:
+	
+			wordlistp = int(parser.index(arg)+1)
+			
+		if '--sc=' in arg:
+	
+			global sc
+			sc = (arg.split("=")[1]).split(',')
+
+		if '--hc=' in arg:
+	
+			global hc
+			hc = (arg.split("=")[1]).split(',')
+	
+	global url
+	global wordlist
+	url = parser[urlp]
+	wordlist = parser[wordlistp]
+
+def wtl():
+
+	with open(wordlist,'rb') as f:
+		global total
+		total = 0
+		for lines in f:
+
+			if b'\n' in lines:
+				total += 1
+				
+def URLPayload():
+
+	if not 'FUZZ' in url:
+
+		print ('Error: FUZZ parameter not found in URL')
+		print ('Usage python3 fuzz -u http://ghost.server/index.php?FUZZ=/etc/passwd -w /usr/share/wordlists/dirb/common.txt')
+		sys.exit(1)
+
+ParseArgs()
+URLPayload()
+
+header = ColMag + r'''
+   ___                           
+ /'___\                          
+/\ \__/  __  __  ____    ____  ''' + ColEnd + r'''   by 0bfxgh0st''' + ColM + r'''*''' + ColEnd + ColMag + r'''
+\ \ ,__\/\ \/\ \/\_ ,`\ /\_ ,`\  
+ \ \ \_/\ \ \_\ \/_/  /_\/_/  /_ 
+  \ \_\  \ \____/ /\____\ /\____\
+   \/_/   \/___/  \/____/ \/____/  
+   
+''' + ColEnd
+
+print (header)
+
+table = '''
+============================================================================
+ID           Response        Lines       Words      Chars           Payload
+============================================================================
+'''
+
+wtl()
+
+print ('Target: ' + url)
+print ('Total requests: ' + str(total))
+print (table)
+
+def main():
+
+	ID = 0
+	lines = 0
+	words = 0
+
+	with open(wordlist,'r',encoding='latin-1') as f:
+
+		for payload in f:
+
+			ID += 1
+			r = requests.get(url.replace('FUZZ',payload.strip()), headers=headers)
+			
+			for i in r.text:
+
+				if i == "\n":
+					lines += 1
+
+			content = r.text
+			words = content.split()
+			
+			result = f"{str(ID):<15}" + f"{str(r.status_code):<15}" + f"{str(lines):<12}" + f"{str(len(words)):<11}" + f"{str(len(r.text)):<15}" + '"' + f"{str(payload).strip()}" + '"'
+			if len(sys.argv) == 5:
+			
+				print (result)
+
+			for code in sc:
+
+				if r.status_code == int(code):
+
+					print (result)
+				
+			for code in hc:                                # this is not working
+				#                                      # as should be. It only
+				#                                      # admit 1 element in array
+				if r.status_code != int(code):         # when was build to take all positions
+                                                                       # --hc=404 will work, --hc=404,403,500 not
+					print (result)
+			
+			lines = 0
+			words = 0
+
+main()
