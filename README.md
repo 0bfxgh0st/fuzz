@@ -17,3 +17,7 @@ Examples:
       fuzz -c -u http://ghost.server/FUZZ -w /usr/share/wordlists/dirb/common.txt --sc=200,403,500
       fuzz -u http://ghost.server/ -w /usr/share/wordlists/dirb/common.txt -c -H 'Host: FUZZ.ghost.server' --hw=933,35
 ```
+```
+Thanks to D3Ext for helping me with some relevant parts of the code
+and the people who always support
+```
